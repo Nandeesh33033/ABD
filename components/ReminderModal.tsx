@@ -14,8 +14,8 @@ const ReminderModal: React.FC<ReminderModalProps> = ({ medicine, onTaken, onTime
   const audioRef = useRef<HTMLAudioElement>(null);
   const timeoutCalledRef = useRef(false);
   
-  // 10 minutes (600 seconds) to match the text description: "If not taken in 10 minutes..."
-  const DURATION_SECONDS = 600; 
+  // 2 minutes (120 seconds) to match the text description: "If not taken in 2 minutes..."
+  const DURATION_SECONDS = 120; 
 
   // Calculate remaining time based on persistent startTime
   const calculateTimeLeft = () => {

@@ -31,7 +31,7 @@ export const translations = {
   afterFood: 'After Food',
   reminderTitle: "It's time for your medicine!",
   takenButton: 'I have taken medicine',
-  missedDoseWarning: 'If not taken in 10 minutes, the caretaker will be notified.',
+  missedDoseWarning: 'If not taken in 2 minutes, the caretaker will be notified.',
   dosesTaken: 'Doses Taken',
   dosesMissed: 'Doses Missed',
   addMedicineTitle: 'Add New Medicine',

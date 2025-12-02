@@ -70,12 +70,6 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : {};
   });
 
-  // Persist Reminder Start Times to prevent timer reset on refresh (Shared)
-  const [reminderStartTimes, setReminderStartTimes] = useState<Record<string, number>>(() => {
-    const saved = localStorage.getItem('reminderStartTimes_v6');
-    return saved ? JSON.parse(saved) : {};
-  });
-
   // Lock for timeout processing to prevent double firing in rapid succession
   const timeoutLock = useRef<Set<string>>(new Set());
 
@@ -97,10 +91,6 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('lastSmsTime_v6', JSON.stringify(lastSmsTime));
   }, [lastSmsTime]);
-
-  useEffect(() => {
-    localStorage.setItem('reminderStartTimes_v6', JSON.stringify(reminderStartTimes));
-  }, [reminderStartTimes]);
 
   // Sync Session Data to SessionStorage
   useEffect(() => {
@@ -134,9 +124,6 @@ const App: React.FC = () => {
       }
       if (e.key === 'lastSmsTime_v6' && e.newValue) {
         setLastSmsTime(JSON.parse(e.newValue));
-      }
-      if (e.key === 'reminderStartTimes_v6' && e.newValue) {
-        setReminderStartTimes(JSON.parse(e.newValue));
       }
     };
 
@@ -491,14 +478,8 @@ const App: React.FC = () => {
         if (!takenToday && !missedToday) {
            // If we are logged in as the specific patient for this med, show modal
            if (currentUser && currentUser.caretakerPhone === med.caretakerId && currentView === View.Patient) {
-               const dateKey = now.toDateString();
-               const timerKey = `${med.id}_${dateKey}`;
-               
-               if (!activeReminder || activeReminder.id !== med.id) {
-                   // Set start time for persistence only if not already set
-                   if (!reminderStartTimes[timerKey]) {
-                       setReminderStartTimes(prev => ({ ...prev, [timerKey]: Date.now() }));
-                   }
+               // Only set if we don't have one active, to prevent thrashing in the loop
+               if (!activeReminder) {
                    setActiveReminder(med);
                }
            }
@@ -510,7 +491,7 @@ const App: React.FC = () => {
         }
       }
     }
-  }, [allMedicines, allLogs, activeReminder, lastSmsTime, allUsers, currentUser, currentView, reminderStartTimes]); 
+  }, [allMedicines, allLogs, activeReminder, lastSmsTime, allUsers, currentUser, currentView]); 
 
   useEffect(() => {
     if (allMedicines.length > 0) {
@@ -522,17 +503,17 @@ const App: React.FC = () => {
 
   const renderActiveReminder = () => {
     if (activeReminder) {
-        const dateKey = new Date().toDateString();
-        const timerKey = `${activeReminder.id}_${dateKey}`;
-        // Fallback to Date.now() only if no key exists, but state logic prioritizes existing key
-        const startTime = reminderStartTimes[timerKey] || Date.now();
+        // Calculate strict start time based on schedule, not when user opened app
+        const now = new Date();
+        const [schedH, schedM] = activeReminder.schedule.time.split(':').map(Number);
+        const scheduledStartTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), schedH, schedM, 0).getTime();
 
         return (
             <ReminderModal 
               medicine={activeReminder} 
               onTaken={() => addLog(activeReminder.id, 'taken', activeReminder.caretakerId)}
               onTimeout={handleReminderTimeout}
-              startTime={startTime}
+              startTime={scheduledStartTime}
             />
         );
     }
